@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contract registry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --surface: #f4f1ea;
+      --white: #fbfaf7;
+      --near-black: #101418;
+      --navy: #1c3148;
+      --navy-mid: #3d5870;
+      --slate: #6d7c8a;
+      --line: rgba(28, 49, 72, 0.14);
+      --light-blue: #7fafd4;
+      --mid-blue: #2f6f9f;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: var(--surface);
+      color: var(--navy);
+      font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
+      font-weight: 400;
+    }
+    button, input { font: inherit; color: inherit; }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 40px;
+      border-bottom: 1px solid var(--line);
+    }
+    .mark {
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .nav a, .ghost {
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      color: var(--navy-mid);
+      font-size: 15px;
+    }
+    .ghost:hover { color: var(--navy); }
+    .hero {
+      padding: 88px 40px 48px;
+      max-width: 1180px;
+    }
+    .kicker {
+      margin: 0 0 22px;
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mid-blue);
+    }
+    h1 {
+      margin: 0;
+      max-width: 14ch;
+      font-size: clamp(52px, 7vw, 92px);
+      line-height: 0.92;
+      font-weight: 500;
+      letter-spacing: -0.045em;
+      color: var(--near-black);
+    }
+    .lede {
+      margin: 28px 0 0;
+      max-width: 36rem;
+      font-size: 20px;
+      line-height: 1.45;
+      color: var(--navy-mid);
+      font-weight: 400;
+    }
+    .lookup {
+      margin-top: 48px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      max-width: 760px;
+      border-bottom: 1px solid var(--navy);
+      padding-bottom: 10px;
+    }
+    .lookup label {
+      display: block;
+      margin-bottom: 8px;
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--slate);
+    }
+    .lookup input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 14px;
+      outline: none;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 180px));
+      gap: 32px;
+      padding: 28px 40px 8px;
+      max-width: 1180px;
+    }
+    .stat b {
+      display: block;
+      font-size: 40px;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+      color: var(--near-black);
+    }
+    .stat span {
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--slate);
+    }
+    .owner-toggle {
+      background: none;
+      border: 0;
+      padding: 0;
+      text-align: left;
+      cursor: pointer;
+    }
+    .owner-toggle span { color: var(--mid-blue); }
+    .owner-list {
+      list-style: none;
+      margin: 18px 0 0;
+      padding: 0 40px 8px;
+      max-width: 1180px;
+    }
+    .owner-list li {
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      word-break: break-all;
+      color: var(--navy);
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+    .list { padding: 12px 40px 96px; }
+    .row {
+      display: grid;
+      grid-template-columns: 72px 1.2fr 1fr;
+      gap: 28px;
+      padding: 36px 0;
+      border-top: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 1px solid var(--line); }
+    .row.off { opacity: 0.45; }
+    .idx {
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--light-blue);
+      padding-top: 10px;
+    }
+    .name {
+      margin: 0;
+      font-size: clamp(28px, 3vw, 40px);
+      line-height: 1.05;
+      font-weight: 500;
+      letter-spacing: -0.035em;
+      color: var(--near-black);
+    }
+    .status {
+      margin-top: 14px;
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mid-blue);
+    }
+    .row.off .status { color: var(--slate); }
+    .facts { display: grid; gap: 18px; padding-top: 6px; }
+    .fact span {
+      display: block;
+      margin-bottom: 6px;
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--slate);
+    }
+    .addr {
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      word-break: break-all;
+      color: var(--navy);
+    }
+    .point { display: grid; grid-template-columns: 88px 1fr; gap: 10px; margin-top: 6px; }
+    .point em {
+      font-style: normal;
+      font-family: "Space Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mid-blue);
+      padding-top: 3px;
+    }
+    .note, .err {
+      padding: 48px 40px 96px;
+      font-size: 22px;
+      color: var(--navy-mid);
+    }
+    .err { color: #9a3b32; }
+    @media (max-width: 860px) {
+      .nav, .hero, .stats, .list, .note, .err, .owner-list { padding-left: 20px; padding-right: 20px; }
+      .row { grid-template-columns: 1fr; gap: 16px; }
+      .stats { grid-template-columns: 1fr; }
+      .lookup { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.1.0",
+        "react-dom/client": "https://esm.sh/react-dom@19.1.0/client",
+        "htm": "https://esm.sh/htm@3.1.1",
+        "ethers": "https://esm.sh/ethers@6.13.5"
+      }
+    }
+  </script>
+  <script type="module">
+    import React, { useEffect, useState } from "react";
+    import { createRoot } from "react-dom/client";
+    import htm from "htm";
+    import { Contract, JsonRpcProvider, isAddress } from "ethers";
+
+    const html = htm.bind(React.createElement);
+
+    const RPC = {
+      1: "https://ethereum-rpc.publicnode.com",
+      137: "https://polygon-bor-rpc.publicnode.com",
+      11155111: "https://ethereum-sepolia-rpc.publicnode.com",
+      23294: "https://sapphire.oasis.io",
+      23295: "https://testnet.sapphire.oasis.io",
+    };
+    const CHAIN_NAME = {
+      1: "ethereum",
+      137: "polygon",
+      11155111: "sepolia",
+      23294: "sapphire",
+      23295: "sapphire-testnet",
+    };
+    const TYPES = ["Call", "Message", "Fetch", "Silent"];
+    const REGISTRY_ABI = [
+      "function owners() view returns (address[])",
+      "function entryCount() view returns (uint256)",
+      "function entries(uint256 offset, uint256 limit) view returns (string[] names, address[] accounts, uint256[] chainIds, bool[] active)",
+    ];
+    const WRAPPER_ABI = [
+      "function defaultImplementation() view returns (address)",
+      "function implementationForType(uint8) view returns (address)",
+    ];
+    const DEFAULT_REGISTRY = "0x78D33e88f97f9DFD47D3F9D14Fc66b2237Ba73D9";
+
+    async function pointsAt(account, chainId) {
+      const url = RPC[Number(chainId)];
+      if (!url) return null;
+      const provider = new JsonRpcProvider(url, Number(chainId));
+      const wrapper = new Contract(account, WRAPPER_ABI, provider);
+      let def;
+      try {
+        def = await wrapper.defaultImplementation();
+      } catch {
+        return null;
+      }
+      if (!isAddress(def) || def === "0x0000000000000000000000000000000000000000") return null;
+      const overrides = [];
+      for (let i = 0; i < TYPES.length; i++) {
+        try {
+          const typed = await wrapper.implementationForType(i);
+          if (typed.toLowerCase() !== def.toLowerCase()) {
+            overrides.push({ type: TYPES[i], address: typed });
+          }
+        } catch {
+          break;
+        }
+      }
+      return { def, overrides };
+    }
+
+    function Points({ target }) {
+      if (!target) return null;
+      return html`<div className="fact">
+        <span>points at</span>
+        <div>
+          <div className="point"><em>default</em><div className="addr">${target.def}</div></div>
+          ${target.overrides.map((item) => html`<div className="point" key=${item.type}>
+            <em>${item.type}</em>
+            <div className="addr">${item.address}</div>
+          </div>`)}
+        </div>
+      </div>`;
+    }
+
+    function App() {
+      const [registry, setRegistry] = useState(DEFAULT_REGISTRY);
+      const [draft, setDraft] = useState(DEFAULT_REGISTRY);
+      const [state, setState] = useState({ status: "loading" });
+      const [ownersOpen, setOwnersOpen] = useState(false);
+
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          setOwnersOpen(false);
+          setState({ status: "loading" });
+          try {
+            if (!isAddress(registry)) throw new Error("Bad registry address");
+            const provider = new JsonRpcProvider(RPC[137], 137);
+            const book = new Contract(registry, REGISTRY_ABI, provider);
+            const owners = await book.owners();
+            const count = Number(await book.entryCount());
+            if (count === 0) {
+              if (!cancelled) setState({ status: "ready", owners, rows: [] });
+              return;
+            }
+            const [names, accounts, chainIds, active] = await book.entries(0, count);
+            const rows = [];
+            for (let i = 0; i < names.length; i++) {
+              const target = await pointsAt(accounts[i], chainIds[i]);
+              rows.push({
+                name: names[i],
+                account: accounts[i],
+                chainId: chainIds[i].toString(),
+                chainName: CHAIN_NAME[Number(chainIds[i])] || "chain",
+                active: active[i],
+                target,
+              });
+            }
+            if (!cancelled) setState({ status: "ready", owners, rows });
+          } catch (err) {
+            if (!cancelled) setState({ status: "error", message: err.shortMessage || err.message || String(err) });
+          }
+        })();
+        return () => { cancelled = true; };
+      }, [registry]);
+
+      const rows = state.rows || [];
+      const live = rows.filter((row) => row.active).length;
+
+      return html`<div>
+        <nav className="nav">
+          <div className="mark">Registry</div>
+          <button className="ghost" type="button" onClick=${() => setRegistry(draft.trim())}>Refresh</button>
+        </nav>
+        <header className="hero">
+          <p className="kicker">Polygon · 137</p>
+          <h1>Every name, and what it points at.</h1>
+          <p className="lede">The book of wrappers. Open a key and you get the live contract behind it.</p>
+          <form className="lookup" onSubmit=${(event) => { event.preventDefault(); setRegistry(draft.trim()); }}>
+            <div>
+              <label htmlFor="registry">Registry address</label>
+              <input id="registry" spellCheck="false" value=${draft} onChange=${(event) => setDraft(event.target.value)} />
+            </div>
+          </form>
+        </header>
+        ${state.status === "ready" && html`<section>
+          <div className="stats">
+            <div className="stat"><b>${rows.length}</b><span>keys</span></div>
+            <div className="stat"><b>${live}</b><span>active</span></div>
+            <button className="stat owner-toggle" type="button" aria-expanded=${ownersOpen} onClick=${() => setOwnersOpen((open) => !open)}>
+              <b>${(state.owners || []).length}</b><span>owners</span>
+            </button>
+          </div>
+          ${ownersOpen && html`<ul className="owner-list">
+            ${(state.owners || []).map((owner) => html`<li key=${owner}>${owner}</li>`)}
+          </ul>`}
+        </section>`}
+        ${state.status === "loading" && html`<p className="note">Loading</p>`}
+        ${state.status === "error" && html`<p className="err">${state.message}</p>`}
+        ${state.status === "ready" && rows.length === 0 && html`<p className="note">No keys yet.</p>`}
+        ${state.status === "ready" && rows.length > 0 && html`<section className="list">
+          ${rows.map((row, index) => html`<article className=${row.active ? "row" : "row off"} key=${row.name}>
+            <div className="idx">${String(index + 1).padStart(2, "0")}</div>
+            <div>
+              <h2 className="name">${row.name}</h2>
+              <div className="status">${row.active ? "Active" : "Inactive"}</div>
+            </div>
+            <div className="facts">
+              <div className="fact"><span>address</span><div className="addr">${row.account}</div></div>
+              <div className="fact"><span>chain</span><div className="addr">${row.chainName} ${row.chainId}</div></div>
+              <${Points} target=${row.target} />
+            </div>
+          </article>`)}
+        </section>`}
+      </div>`;
+    }
+
+    createRoot(document.getElementById("root")).render(html`<${App} />`);
+  </script>
+</body>
+</html>
