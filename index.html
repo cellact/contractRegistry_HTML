@@ -269,12 +269,17 @@
       "function defaultImplementation() view returns (address)",
       "function implementationForType(uint8) view returns (address)",
     ];
+    const NOTIFIER_ABI = [
+      "function getApplicationNotifier() view returns (address)",
+    ];
+    const ZERO = "0x0000000000000000000000000000000000000000";
     const DEFAULT_REGISTRY = "0x78D33e88f97f9DFD47D3F9D14Fc66b2237Ba73D9";
 
-    async function pointsAt(account, chainId) {
-      const url = RPC[Number(chainId)];
-      if (!url) return null;
-      const provider = new JsonRpcProvider(url, Number(chainId));
+    function realAddress(value) {
+      return isAddress(value) && value.toLowerCase() !== ZERO;
+    }
+
+    async function pointsAt(provider, account) {
       const wrapper = new Contract(account, WRAPPER_ABI, provider);
       let def;
       try {
@@ -282,7 +287,7 @@
       } catch {
         return null;
       }
-      if (!isAddress(def) || def === "0x0000000000000000000000000000000000000000") return null;
+      if (!realAddress(def)) return null;
       const overrides = [];
       for (let i = 0; i < TYPES.length; i++) {
         try {
@@ -295,6 +300,25 @@
         }
       }
       return { def, overrides };
+    }
+
+    async function applicationNotifier(provider, account) {
+      try {
+        const notifier = await new Contract(account, NOTIFIER_ABI, provider).getApplicationNotifier();
+        return realAddress(notifier) ? notifier : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function readRow(account, chainId) {
+      const url = RPC[Number(chainId)];
+      if (!url) return { target: null, notifier: null };
+      const provider = new JsonRpcProvider(url, Number(chainId));
+      const target = await pointsAt(provider, account);
+      let notifier = await applicationNotifier(provider, account);
+      if (!notifier && target) notifier = await applicationNotifier(provider, target.def);
+      return { target, notifier };
     }
 
     function Points({ target }) {
@@ -335,14 +359,15 @@
             const [names, accounts, chainIds, active] = await book.entries(0, count);
             const rows = [];
             for (let i = 0; i < names.length; i++) {
-              const target = await pointsAt(accounts[i], chainIds[i]);
+              const extra = await readRow(accounts[i], chainIds[i]);
               rows.push({
                 name: names[i],
                 account: accounts[i],
                 chainId: chainIds[i].toString(),
                 chainName: CHAIN_NAME[Number(chainIds[i])] || "chain",
                 active: active[i],
-                target,
+                target: extra.target,
+                notifier: extra.notifier,
               });
             }
             if (!cancelled) setState({ status: "ready", owners, rows });
@@ -398,6 +423,7 @@
               <div className="fact"><span>address</span><div className="addr">${row.account}</div></div>
               <div className="fact"><span>chain</span><div className="addr">${row.chainName} ${row.chainId}</div></div>
               <${Points} target=${row.target} />
+              ${row.notifier && html`<div className="fact"><span>application notifier</span><div className="addr">${row.notifier}</div></div>`}
             </div>
           </article>`)}
         </section>`}
